@@ -24,9 +24,6 @@ export const AGGREGATION_JOB_TYPE = 0;
 
 export const EXTENDED_HISTORY_NOT_SUPPORTED_MSG =
   "Member's institution does not support extended transaction history.";
-let cacheClient: CacheClient;
-let logClient: LogClient;
-let envConfig: Record<string, string>;
 
 const mapCredentials = (mxCreds: CredentialsResponseBody): Credential[] => {
   if (mxCreds.credentials != null) {
@@ -60,6 +57,9 @@ const fromMxMember = (
 export class MxAdapter implements WidgetAdapter {
   aggregator: string;
   apiClient: ReturnType<typeof MxPlatformApiFactory>;
+  cacheClient: CacheClient;
+  logClient: LogClient;
+  envConfig: Record<string, string>;
 
   RouteHandlers = {
     /**
@@ -84,9 +84,9 @@ export class MxAdapter implements WidgetAdapter {
     this.apiClient = int
       ? MxIntApiClient(dependencies?.aggregatorCredentials.mxInt)
       : MxProdApiClient(dependencies?.aggregatorCredentials.mxProd);
-    cacheClient = dependencies?.cacheClient;
-    logClient = dependencies?.logClient;
-    envConfig = dependencies?.envConfig;
+    this.cacheClient = dependencies?.cacheClient;
+    this.logClient = dependencies?.logClient;
+    this.envConfig = dependencies?.envConfig;
   }
 
   async GetInstitutionById(id: string): Promise<Institution> {
@@ -141,21 +141,20 @@ export class MxAdapter implements WidgetAdapter {
         (m) => m.institution_code === entityId,
       );
       if (existing != null) {
-        logClient.info(
+        this.logClient.info(
           `Found existing member for institution ${entityId}, deleting`,
         );
         await this.apiClient.deleteMember(existing?.guid || "", userId || "");
       }
     } catch (e) {
-      console.log("---------------------------> error", e);
-      logClient.error(e);
+      this.logClient.error(e);
     }
     // let res = await this.apiClient.listInstitutionCredentials(entityId)
     // console.log(request)
     const memberRes = await this.apiClient.createMember(userId || "", {
       referral_source: "APP", // request.is_oauth ? 'APP' : '',
       client_redirect_url: request.is_oauth
-        ? `${envConfig.HOSTURL}/oauth_redirect`
+        ? `${this.envConfig.HOSTURL}/oauth_redirect`
         : null,
       member: {
         skip_aggregation: request.skip_aggregation || jobType !== "aggregate",
@@ -320,7 +319,7 @@ export class MxAdapter implements WidgetAdapter {
     const res = await this.apiClient.readMemberStatus(memberId, userId || "");
     const member = res.data.member;
     let status = member?.connection_status;
-    const oauthStatus = await cacheClient.get(member?.guid || "");
+    const oauthStatus = await this.cacheClient.get(member?.guid || "");
 
     if (oauthStatus?.error != null) {
       status = ConnectionStatus[ConnectionStatus.REJECTED];
@@ -398,20 +397,20 @@ export class MxAdapter implements WidgetAdapter {
     userId: string,
     failIfNotFound: boolean = false,
   ): Promise<string> {
-    logClient.debug("Resolving UserId: " + userId);
+    this.logClient.debug("Resolving UserId: " + userId);
 
     let ret;
     const res = await this.apiClient.listUsers(1, 10, userId);
     const mxUser = res.data?.users?.find((u) => u.id === userId);
 
     if (mxUser != null) {
-      logClient.trace(`Found existing mx user ${mxUser.guid}`);
+      this.logClient.trace(`Found existing mx user ${mxUser.guid}`);
       return mxUser.guid || "";
     } else if (failIfNotFound) {
       throw new Error("User not resolved successfully");
     }
 
-    logClient.trace(`Creating mx user ${userId}`);
+    this.logClient.trace(`Creating mx user ${userId}`);
 
     try {
       ret = await this.apiClient.createUser({
@@ -422,7 +421,7 @@ export class MxAdapter implements WidgetAdapter {
         return ret.data.user.guid || "";
       }
     } catch (e) {
-      logClient.trace(`Failed creating mx user, using user_id: ${userId}`);
+      this.logClient.trace(`Failed creating mx user, using user_id: ${userId}`);
       return userId;
     }
 
