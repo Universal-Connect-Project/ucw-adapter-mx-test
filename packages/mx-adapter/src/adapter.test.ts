@@ -1,6 +1,7 @@
 import { ChallengeType, ConnectionStatus } from "@repo/utils";
 import type { Response } from "express";
 import { http, HttpResponse } from "msw";
+
 import {
   AGGREGATION_JOB_TYPE,
   EXTENDED_HISTORY_NOT_SUPPORTED_MSG,
@@ -24,6 +25,7 @@ import {
 } from "./test/handlers";
 import { institutionData } from "./test/testData/institution";
 import { institutionCredentialsData } from "./test/testData/institutionCredentials";
+import { aggregatorCredentials } from "./test/testData/aggregatorCredentials";
 import {
   aggregateMemberMemberData,
   connectionByIdMemberData,
@@ -41,25 +43,6 @@ import { createClient as createCacheClient } from "./test/utils/cacheClient";
 import { logClient } from "./test/utils/logClient";
 
 const cacheClient = createCacheClient();
-
-const aggregatorCredentials = {
-  mxInt: {
-    username: null,
-    password: null,
-    basePath: "https://int-api.mx.com",
-    vcEndpoint: "https://int-api.mx.com/",
-    aggregator: "mx_int",
-    available: true,
-  },
-  mxProd: {
-    username: null,
-    password: null,
-    basePath: "https://api.mx.com",
-    vcEndpoint: "https://api.mx.com/",
-    aggregator: "mx",
-    available: true,
-  },
-};
 
 const mxAdapterInt = new MxAdapter({
   int: true,

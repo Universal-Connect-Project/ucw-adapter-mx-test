@@ -46,11 +46,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: "lts/Iron"
           check-latest: true
       - run: npm ci
 
-      - run: npm run copyAltTestPreferences
+      - run: npm run copyTestPreferences
 
       - name: "Create env file"
         run: |

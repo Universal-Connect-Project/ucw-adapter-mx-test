@@ -12,7 +12,7 @@ export const getMxAdapterMapObject = (dependencies: AdapterDependencies) => {
       vcAdapter: createMxProdGetVC(dependencies),
       widgetAdapter: new MxAdapter({
         int: false,
-        dependencies,
+        dependencies: dependencies,
       }),
     } as AdapterMap,
     mx_int: {
@@ -20,7 +20,7 @@ export const getMxAdapterMapObject = (dependencies: AdapterDependencies) => {
       vcAdapter: createMxIntGetVC(dependencies),
       widgetAdapter: new MxAdapter({
         int: true,
-        dependencies,
+        dependencies: dependencies,
       }),
     } as AdapterMap,
   } as Record<string, AdapterMap>;
